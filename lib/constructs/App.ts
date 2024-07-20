@@ -1,5 +1,4 @@
 import {App as CDKApp, AppProps as CDKAppProps} from 'aws-cdk-lib/core';
-
 import {FunctionalStack, stack} from './FunctionStack';
 import type {StackProps} from './Stack';
 

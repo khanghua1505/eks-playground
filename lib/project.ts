@@ -4,10 +4,11 @@ import fs from 'fs/promises';
 import YAML from 'yaml';
 import dotenv from 'dotenv';
 import {merge} from 'lodash';
+import ejs from 'ejs';
 import {StackProps} from 'aws-cdk-lib';
-
 import {VisibleError} from './error';
 import {Logger} from './logger';
+import {env} from './secrets';
 
 export interface ProjectConfig {
   config: ConfigOptions;
@@ -92,18 +93,18 @@ export async function initProject() {
   Logger.debug('initing project');
   const root = await findRoot();
 
-  async function findConfigFile(files: string[]) {
+  async function findConfigFile(files: string[], data: ejs.Data) {
     for (const filename of files) {
       const file = path.join(root, filename);
       if (!fsSync.existsSync(file)) continue;
-      const project = await loadConfig(file);
+      const project = await parseConfig(file, data);
       return project as ProjectConfig;
     }
     return undefined;
   }
 
   let projectConfig = await (async function () {
-    const file = await findConfigFile(CONFIG_FILES);
+    const file = await findConfigFile(CONFIG_FILES, {env});
     if (file) return file;
 
     throw new VisibleError(
@@ -128,7 +129,7 @@ export async function initProject() {
     `.project.${stage}.yml`,
   ];
   const stageProjectConfig = await (async function () {
-    const file = await findConfigFile(stageConfigFiles);
+    const file = await findConfigFile(stageConfigFiles, {env});
     return file ? file : {};
   })();
 
@@ -186,10 +187,9 @@ export async function initProject() {
   return project;
 }
 
-async function loadConfig(file: string) {
-  const projectConfig = YAML.parse(
-    await fs.readFile(file, {encoding: 'utf-8'})
-  ) as ProjectConfig;
+async function parseConfig(file: string, data?: ejs.Data) {
+  const content = await ejs.renderFile(file, data, {async: true});
+  const projectConfig = YAML.parse(content) as ProjectConfig;
   const {config} = projectConfig ?? {};
   if (!config?.name) {
     throw new VisibleError('Could not find a project name');

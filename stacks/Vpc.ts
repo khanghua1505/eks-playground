@@ -6,6 +6,7 @@ interface VpcProps {
 }
 
 export function Vpc({stack, props}: StackContext<VpcProps>) {
+  console.log(props);
   const vpc = new ec2.Vpc(stack, 'Vpc', {
     ipAddresses: ec2.IpAddresses.cidr(props.cidr),
   });
