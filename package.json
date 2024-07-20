@@ -2,13 +2,20 @@
   "name": "eks-playground",
   "version": "0.1.0",
   "bin": {
-    "eks-playground": "bin/eks-playground.js"
+    "cdk-app": "bin/cdk-app.js"
   },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "lint": "gts lint",
+    "clean": "gts clean",
+    "compile": "tsc",
+    "fix": "gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run lint"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -17,7 +24,8 @@
     "ts-jest": "^29.1.5",
     "aws-cdk": "2.148.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.5.3"
+    "typescript": "~5.5.3",
+    "gts": "^5.3.1"
   },
   "dependencies": {
     "aws-cdk-lib": "2.148.0",
