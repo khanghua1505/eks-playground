@@ -1,4 +1,4 @@
-import app from '../lib/cdk/app';
+import app from '../lib/app';
 import {Vpc} from './Vpc';
 
 const stacks = (() => {

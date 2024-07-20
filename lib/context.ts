@@ -1,4 +1,4 @@
-import {App} from '../constructs/App';
+import {App} from './constructs/App';
 
 /**
  * @internal

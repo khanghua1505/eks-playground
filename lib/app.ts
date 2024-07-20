@@ -1,13 +1,16 @@
-import {useSTSIdentity} from '../credentials';
-import {initProject} from '../project';
-import {App} from '../constructs/App';
+import {useSTSIdentity} from './credentials';
+import {initProject} from './project';
+import {App} from './constructs/App';
 import {AppContext, provideApp} from './context';
 import {
+  StackContext as FunctionalStackContext,
   FunctionalStack,
   use as useStack,
   dependsOn as dependsOnStack,
-} from '../constructs/FunctionStack';
-import {StackProps} from '../constructs/Stack';
+} from './constructs/FunctionStack';
+import {StackProps} from './constructs/Stack';
+
+export type StackContext = FunctionalStackContext;
 
 export async function initApp() {
   const project = await initProject();

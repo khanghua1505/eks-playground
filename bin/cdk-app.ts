@@ -1,4 +1,4 @@
-import app from '../lib/cdk/app';
+import app from '../lib/app';
 
 (async () => {
   await app.initApp();
