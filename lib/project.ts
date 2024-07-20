@@ -23,6 +23,7 @@ export interface ConfigOptions {
   role?: string;
   ssmPrefix?: string;
   outputs?: string;
+  stackDir?: string;
   cdk?: CDKConfig;
 }
 
@@ -163,6 +164,7 @@ export async function initProject() {
           : config.profile,
       role: config.role,
       ssmPrefix: config.ssmPrefix || `/${config.name}/${stage}/`,
+      stackDir: config.stackDir || path.join(root, 'stacks'),
       cdk: config.cdk,
     },
     paths: {

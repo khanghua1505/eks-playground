@@ -1,3 +1,4 @@
+import path from 'path';
 import {useSTSIdentity} from './credentials';
 import {initProject} from './project';
 import {App} from './constructs/App';
@@ -31,8 +32,11 @@ export async function initApp() {
 }
 
 export async function synth() {
+  await initApp();
   const app = AppContext.current!;
-  if (!app) throw new Error('No app is set');
+  const project = await initProject();
+  const stacksRelPath = path.relative(__dirname, project.config.stackDir!);
+  await import(stacksRelPath);
   const assembly = app.synth();
   return assembly;
 }
