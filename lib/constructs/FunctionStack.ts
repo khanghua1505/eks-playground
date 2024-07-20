@@ -1,18 +1,15 @@
 import {snakeCase} from 'change-case-all';
-
-import {useProject} from '../project';
 import {App} from './App';
 import {Stack, StackProps} from './Stack';
 
 export function stack(
   app: App,
-  fn: FunctionalStack<any>,
-  props?: StackProps & {id?: string}
+  fn: FunctionalStack<any, any>,
+  props?: StackProps & {[key: string]: any}
 ) {
   currentApp = app;
   currentStack = fn;
   const id = props?.id || snakeCase(fn.name);
-  const stackConfig = useProject().stacks[id] || {};
   const exists = getExports(app).has(fn);
   if (exists)
     throw new Error(
@@ -24,11 +21,12 @@ export function stack(
       super(scope, id, props);
     }
   }
-  const stack = new EmptyStack(app, id, {...props, ...stackConfig});
+  const stack = new EmptyStack(app, id, props);
   getStacks(app).set(fn, stack);
-  const ctx: StackContext = {
+  const ctx: StackContext<any> = {
     app,
     stack,
+    props,
   };
   const returns = fn.bind(stack)(ctx);
   if (returns && 'then' in returns)
@@ -41,9 +39,9 @@ export function stack(
 }
 
 let currentApp: App;
-let currentStack: FunctionalStack<any>;
-const exportsCache = new Map<App, Map<FunctionalStack<any>, any>>();
-const stackCache = new Map<App, Map<FunctionalStack<any>, Stack>>();
+let currentStack: FunctionalStack<any, any>;
+const exportsCache = new Map<App, Map<FunctionalStack<any, any>, any>>();
+const stackCache = new Map<App, Map<FunctionalStack<any, any>, Stack>>();
 
 function getExports(app: App) {
   if (!exportsCache.has(app)) exportsCache.set(app, new Map());
@@ -55,7 +53,7 @@ function getStacks(app: App) {
   return stackCache.get(app)!;
 }
 
-export function use<T>(stack: FunctionalStack<T>): T {
+export function use<C, R>(stack: FunctionalStack<C, R>): R {
   if (!currentApp) throw new Error('No app is set');
   const exports = getExports(currentApp);
   if (!exports.has(stack))
@@ -65,13 +63,13 @@ export function use<T>(stack: FunctionalStack<T>): T {
   return exports.get(stack);
 }
 
-export function dependsOn(stack: FunctionalStack<any>) {
+export function dependsOn(stack: FunctionalStack<any, any>) {
   const current = getStack(currentStack);
   const target = getStack(stack)!;
   current!.addDependency(target);
 }
 
-export function getStack(stack: FunctionalStack<any>) {
+export function getStack(stack: FunctionalStack<any, any>) {
   if (!currentApp) throw new Error('No app is set');
   const stacks = getStacks(currentApp);
   if (!stacks.has(stack))
@@ -82,12 +80,13 @@ export function getStack(stack: FunctionalStack<any>) {
   return stacks.get(stack)!;
 }
 
-export type StackContext = {
+export type StackContext<T> = {
   app: App;
   stack: Stack;
+  props: T;
 };
 
-export type FunctionalStack<T> = (
+export type FunctionalStack<C, R> = (
   this: Stack,
-  ctx: StackContext
-) => T | Promise<T>;
+  ctx: StackContext<C>
+) => R | Promise<R>;

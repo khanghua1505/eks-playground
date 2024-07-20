@@ -1,9 +1,13 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import {StackContext} from '../lib/app';
 
-export function Vpc({stack}: StackContext) {
+interface VpcProps {
+  readonly cidr: string;
+}
+
+export function Vpc({stack, props}: StackContext<VpcProps>) {
   const vpc = new ec2.Vpc(stack, 'Vpc', {
-    ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
+    ipAddresses: ec2.IpAddresses.cidr(props.cidr),
   });
 
   return {

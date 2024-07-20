@@ -1,3 +1,7 @@
 config:
   region: ap-southeast-1
   name: quick-start
+
+stacks:
+  vpc:
+    cidr: 10.0.0.0/16

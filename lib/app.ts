@@ -1,6 +1,7 @@
 import path from 'path';
+import {snakeCase} from 'change-case-all';
 import {useSTSIdentity} from './credentials';
-import {initProject} from './project';
+import {initProject, useProject} from './project';
 import {App} from './constructs/App';
 import {AppContext, provideApp} from './context';
 import {
@@ -11,7 +12,7 @@ import {
 } from './constructs/FunctionStack';
 import {StackProps} from './constructs/Stack';
 
-export type StackContext = FunctionalStackContext;
+export type StackContext<T> = FunctionalStackContext<T>;
 
 export async function initApp() {
   const project = await initProject();
@@ -41,17 +42,19 @@ export async function synth() {
   return assembly;
 }
 
-export async function stack(fn: FunctionalStack<any>, props?: StackProps) {
+export async function stack(fn: FunctionalStack<any, any>, props?: StackProps) {
   const app = AppContext.current!;
   if (!app) throw new Error('No app is set');
-  app.stack(fn, props);
+  const stackName = snakeCase(fn.name);
+  const stackOptions = useProject().stacks[stackName] || {};
+  app.stack(fn, {...props, ...stackOptions});
 }
 
-export function use<T>(stack: FunctionalStack<T>): T {
+export function use<C, R>(stack: FunctionalStack<C, R>): R {
   return useStack(stack);
 }
 
-export function dependsOn(stack: FunctionalStack<any>) {
+export function dependsOn(stack: FunctionalStack<any, any>) {
   return dependsOnStack(stack);
 }
 

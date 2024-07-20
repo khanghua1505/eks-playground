@@ -95,7 +95,7 @@ export class App extends CDKApp {
   // Functional Stack
   // This is a magical global to avoid having to pass app everywhere.
   // We only every have one instance of app
-  stack<T extends FunctionalStack<any>>(
+  stack<T extends FunctionalStack<any, any>>(
     fn: T,
     props?: StackProps
   ): ReturnType<T> extends Promise<any> ? Promise<void> : App {
