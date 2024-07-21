@@ -4,7 +4,7 @@ import type {StackProps} from './Stack';
 
 /**
  * @internal
- * */
+ */
 export interface AppDeployProps {
   /**
    * The app name, used to prefix stacks.
@@ -32,7 +32,7 @@ export interface AppDeployProps {
 
 /**
  * @internal
- * */
+ */
 export type AppProps = CDKAppProps;
 
 /**
@@ -57,6 +57,7 @@ export class App extends CDKApp {
    * The AWS account the app is being deployed to.
    */
   public readonly account: string;
+
   public readonly appPath: string;
 
   /**

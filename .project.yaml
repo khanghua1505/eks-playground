@@ -1,7 +1,24 @@
 config:
   region: ap-southeast-1
-  name: quick-start
+  name: eks-playground
 
 stacks:
   vpc:
     cidr: 10.0.0.0/16
+    maxAzs: 2
+  eks:
+    clusterName: eks-playground
+    endpointAccess:
+      - 171.252.188.5/32
+    nodeGroups:
+      - name: General
+        os: BOTTLEROCKET
+        capacityType: SPOT
+        instanceTypes:
+          - m5.large
+        desiredSize: 1
+        maxSize: 2
+        taints:
+          - effect: PREFER_NO_SCHEDULE
+            key: unstable
+            value: "True"
