@@ -22,3 +22,8 @@ stacks:
           - effect: PREFER_NO_SCHEDULE
             key: unstable
             value: "True"
+    addons:
+      vpcCni: {}
+      coreDns: {}
+      kubeProxy: {}
+      podIdentityAgent: {}

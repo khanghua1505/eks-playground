@@ -1,9 +1,4 @@
-import {
-  Vpc as CDKVpc,
-  IpProtocol,
-  IpAddresses,
-  SubnetType,
-} from 'aws-cdk-lib/aws-ec2';
+import {Vpc as CDKVpc, IpProtocol, IpAddresses, SubnetType} from 'aws-cdk-lib/aws-ec2';
 import {StackContext} from '../lib/app';
 
 interface VpcProps {
