@@ -53,12 +53,7 @@ const DEFAULTS = {
   stage: 'dev',
 } as const;
 
-const CONFIG_FILES = [
-  '.project',
-  '.project.json',
-  '.project.yaml',
-  '.project.yml',
-];
+const CONFIG_FILES = ['.project', '.project.json', '.project.yaml', '.project.yml'];
 
 interface Project {
   config: ConfigOptions &
@@ -115,11 +110,7 @@ export async function initProject() {
   })();
 
   const config = projectConfig.config;
-  const stage =
-    config.stage ||
-    process.env.CDK_STAGE ||
-    process.env.STAGE ||
-    DEFAULTS.stage;
+  const stage = config.stage || process.env.CDK_STAGE || process.env.STAGE || DEFAULTS.stage;
 
   // Load stage config file
   const stageConfigFiles = [

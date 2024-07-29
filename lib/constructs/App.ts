@@ -69,10 +69,8 @@ export class App extends CDKApp {
 
     this.name = deployProps.name || 'my-app';
     this.stage = deployProps.stage || 'dev';
-    this.region =
-      deployProps.region || process.env.CDK_DEFAULT_REGION || 'us-east-1';
-    this.account =
-      deployProps.account || process.env.CDK_DEFAULT_ACCOUNT || 'my-account';
+    this.region = deployProps.region || process.env.CDK_DEFAULT_REGION || 'us-east-1';
+    this.account = deployProps.account || process.env.CDK_DEFAULT_ACCOUNT || 'my-account';
   }
 
   /**

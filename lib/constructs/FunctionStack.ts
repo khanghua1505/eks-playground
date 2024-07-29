@@ -1,4 +1,4 @@
-import {snakeCase} from 'change-case-all';
+import {camelCase} from 'change-case-all';
 import {App} from './App';
 import {Stack, StackProps} from './Stack';
 
@@ -9,12 +9,10 @@ export function stack(
 ) {
   currentApp = app;
   currentStack = fn;
-  const id = props?.id || snakeCase(fn.name);
+  const id = props?.id || camelCase(fn.name);
   const exists = getExports(app).has(fn);
   if (exists)
-    throw new Error(
-      `StackDuplicates: Attempting to initialize stack ${id} several times`
-    );
+    throw new Error(`StackDuplicates: Attempting to initialize stack ${id} several times`);
 
   class EmptyStack extends Stack {
     constructor(scope: App, id: string, props?: StackProps) {
@@ -86,7 +84,4 @@ export type StackContext<T> = {
   props: T;
 };
 
-export type FunctionalStack<C, R> = (
-  this: Stack,
-  ctx: StackContext<C>
-) => R | Promise<R>;
+export type FunctionalStack<C, R> = (this: Stack, ctx: StackContext<C>) => R | Promise<R>;

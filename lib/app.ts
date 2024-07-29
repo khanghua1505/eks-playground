@@ -1,5 +1,5 @@
 import path from 'path';
-import {snakeCase} from 'change-case-all';
+import {camelCase} from 'change-case-all';
 import {useSTSIdentity} from './credentials';
 import {initProject, useProject} from './project';
 import {App} from './constructs/App';
@@ -45,7 +45,7 @@ export async function synth() {
 export async function stack(fn: FunctionalStack<any, any>, props?: StackProps) {
   const app = AppContext.current!;
   if (!app) throw new Error('No app is set');
-  const stackName = snakeCase(fn.name);
+  const stackName = camelCase(fn.name);
   const stackOptions = useProject().stacks[stackName] || {};
   app.stack(fn, {...props, ...stackOptions});
 }
