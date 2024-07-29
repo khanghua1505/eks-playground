@@ -7,11 +7,13 @@ import {
   EndpointAccess,
   NodegroupAmiType,
 } from 'aws-cdk-lib/aws-eks';
-import {InstanceType, SubnetType} from 'aws-cdk-lib/aws-ec2';
+import {KubectlV30Layer} from '@aws-cdk/lambda-layer-kubectl-v30';
+import {KubectlV29Layer} from '@aws-cdk/lambda-layer-kubectl-v29';
 
 import {use} from '../lib/app';
 import {Vpc} from './Vpc';
 import {StackContext} from '../lib/app';
+import {InstanceType, SubnetType} from 'aws-cdk-lib/aws-ec2';
 
 interface EksProps {
   /**
@@ -122,14 +124,20 @@ export function EKS({stack, props}: StackContext<EksProps>) {
     ? EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...props.allowedListIps)
     : undefined;
 
+  const kubectlLayer =
+    version === KubernetesVersion.V1_29
+      ? new KubectlV29Layer(stack, 'kubectl')
+      : new KubectlV30Layer(stack, 'kubectl');
+
   const cluster = new EKSCluster(stack, props.clusterName, {
+    authenticationMode: AuthenticationMode.API_AND_CONFIG_MAP,
     clusterName: props.clusterName,
     version,
+    kubectlLayer,
     vpc,
     defaultCapacity: 0,
     endpointAccess,
     vpcSubnets: [{subnetType: SubnetType.PRIVATE_WITH_EGRESS}],
-    authenticationMode: AuthenticationMode.API_AND_CONFIG_MAP,
   });
 
   if (props.nodeGroups) {
