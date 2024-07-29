@@ -46,13 +46,7 @@ export const useAWSCredentials = () => {
 export const useSTSIdentity = lazy(async () => {
   const sts = useAWSClient(STSClient);
   const identity = await sts.send(new GetCallerIdentityCommand({}));
-  Logger.debug(
-    'Using identity',
-    'Account:',
-    identity.Account,
-    'User:',
-    identity.UserId
-  );
+  Logger.debug('Using identity', 'Account:', identity.Account, 'User:', identity.UserId);
   return identity;
 });
 

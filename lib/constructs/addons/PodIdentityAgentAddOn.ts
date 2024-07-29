@@ -12,7 +12,7 @@ const versionMap: Map<KubernetesVersion, string> = new Map([
 
 export type PodIdentityAgentAddOnProps = Omit<
   CoreAddOnProps,
-  'versionMap' | 'serviceAccountName' | 'addOnName'
+  'versionMap' | 'serviceAccountName' | 'addOnName' | 'policyDocument'
 >;
 
 /**

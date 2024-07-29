@@ -26,16 +26,13 @@ import {
 import {StackContext, use} from '../lib/app';
 import {Vpc} from './Vpc';
 
-type VpcCniProps = Omit<VpcCniAddOnProps, 'cluster' | 'kubernetesVersion' | 'policyDocument'>;
+type VpcCniProps = Omit<VpcCniAddOnProps, 'cluster' | 'kubernetesVersion'>;
 
-type CoreDnsProps = Omit<CoreDnsAddOnProps, 'cluster' | 'kubernetesVersion' | 'policyDocument'>;
+type CoreDnsProps = Omit<CoreDnsAddOnProps, 'cluster' | 'kubernetesVersion'>;
 
-type KubeProxyProps = Omit<KubeProxyAddOnProps, 'cluster' | 'kubernetesVersion' | 'policyDocument'>;
+type KubeProxyProps = Omit<KubeProxyAddOnProps, 'cluster' | 'kubernetesVersion'>;
 
-type PodIdentityAgentProps = Omit<
-  PodIdentityAgentAddOnProps,
-  'cluster' | 'kubernetesVersion' | 'policyDocument'
->;
+type PodIdentityAgentProps = Omit<PodIdentityAgentAddOnProps, 'cluster' | 'kubernetesVersion'>;
 
 interface EksProps {
   /**

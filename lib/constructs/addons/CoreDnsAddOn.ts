@@ -15,7 +15,7 @@ const versionMap: Map<KubernetesVersion, string> = new Map([
  */
 export type CoreDnsAddOnProps = Omit<
   CoreAddOnProps,
-  'versionMap' | 'serviceAccountName' | 'addOnName'
+  'versionMap' | 'serviceAccountName' | 'addOnName' | 'policyDocument'
 >;
 
 const defaultProps = {
