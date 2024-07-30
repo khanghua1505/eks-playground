@@ -40,8 +40,7 @@ export class Stack extends CDKStack {
     const {config} = useProject();
     const props: DefaultStackSynthesizerProps = {
       qualifier: config.cdk?.qualifier,
-      bootstrapStackVersionSsmParameter:
-        config.cdk?.bootstrapStackVersionSsmParameter,
+      bootstrapStackVersionSsmParameter: config.cdk?.bootstrapStackVersionSsmParameter,
       fileAssetsBucketName: config.cdk?.fileAssetsBucketName,
       deployRoleArn: config.cdk?.deployRoleArn,
       fileAssetPublishingRoleArn: config.cdk?.fileAssetPublishingRoleArn,

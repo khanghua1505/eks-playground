@@ -26,4 +26,24 @@ stacks:
       vpcCni: {}
       coreDns: {}
       kubeProxy: {}
-      podIdentityAgent: {}
+      eksPodIdentityAgent: {}
+      ebsCni: {}
+      efsCni: {}
+      awsForFluentBit:
+        values:
+          additionalFilters: |
+            [FILTER]
+                Name         parser
+                Match        kube.*
+                Key_Name     log
+                Parser       json
+                Reserve_Data True
+          cloudWatchLogs:
+            region: ap-southeast-1
+            logGroupName: fallback_group
+            logStreamPrefix: fallback_stream
+            autoCreateGroup: true
+            logRetentionDays: 7d
+            extraOutputs: |
+              log_group_template  /aws/eks/eks-playground/namespaces/$kubernetes['namespace_name']
+              log_stream_template $kubernetes['pod_name'].$kubernetes['container_name']

@@ -11,6 +11,7 @@ import {
   dependsOn as dependsOnStack,
 } from './constructs/FunctionStack';
 import {StackProps} from './constructs/Stack';
+import {Logger} from './logger';
 
 export type StackContext<T> = FunctionalStackContext<T>;
 
@@ -38,16 +39,27 @@ export async function synth() {
   const project = await initProject();
   const stacksRelPath = path.relative(__dirname, project.config.stackDir!);
   await import(stacksRelPath);
+  await Promise.all(worker);
+
   const assembly = app.synth();
+  Logger.debug('Finish synth!');
   return assembly;
 }
 
-export async function stack(fn: FunctionalStack<any, any>, props?: StackProps) {
+const worker: Promise<any>[] = [];
+
+export function stack(fn: FunctionalStack<any, any>, props?: StackProps) {
   const app = AppContext.current!;
   if (!app) throw new Error('No app is set');
   const stackName = camelCase(fn.name);
   const stackOptions = useProject().stacks[stackName] || {};
-  app.stack(fn, {...props, ...stackOptions});
+  const returns = app.stack(fn, {...props, ...stackOptions});
+  if (returns && 'then' in returns) {
+    worker.push(returns);
+  } else {
+    worker.push(Promise.resolve(returns));
+  }
+  return app;
 }
 
 export function use<C, R>(stack: FunctionalStack<C, R>): R {

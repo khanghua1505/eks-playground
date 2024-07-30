@@ -1,5 +1,4 @@
 import {
-  Cluster as EKSCluster,
   KubernetesVersion,
   TaintSpec,
   CapacityType,
@@ -7,32 +6,25 @@ import {
   EndpointAccess,
   NodegroupAmiType,
 } from 'aws-cdk-lib/aws-eks';
-import {InstanceType, SubnetType} from 'aws-cdk-lib/aws-ec2';
+import {InstanceType} from 'aws-cdk-lib/aws-ec2';
 import {KubectlV30Layer} from '@aws-cdk/lambda-layer-kubectl-v30';
-import {KubectlV29Layer} from '@aws-cdk/lambda-layer-kubectl-v29';
-import {Construct} from 'constructs';
-
-import {
-  VpcCniAddOn,
-  VpcCniAddOnProps,
-  CoreDnsAddOn,
-  CoreDnsAddOnProps,
-  KubeProxyAddOn,
-  KubeProxyAddOnProps,
-  PodIdentityAgentAddOn,
-  PodIdentityAgentAddOnProps,
-} from '../lib/constructs/addons';
 
 import {StackContext, use} from '../lib/app';
+import {
+  EksCluster,
+  VpcCniAddOnProps,
+  CoreDnsAddOnProps,
+  KubeProxyAddOnProps,
+  EksPodIdentityAgentAddOnProps,
+  AwsForFluentBitAddOnProps,
+  EbsCsiDriverAddOnProps,
+  EfsCsiDriverProps,
+} from '../lib/constructs/Eks';
 import {Vpc} from './Vpc';
 
-type VpcCniProps = Omit<VpcCniAddOnProps, 'cluster' | 'kubernetesVersion'>;
-
-type CoreDnsProps = Omit<CoreDnsAddOnProps, 'cluster' | 'kubernetesVersion'>;
-
-type KubeProxyProps = Omit<KubeProxyAddOnProps, 'cluster' | 'kubernetesVersion'>;
-
-type PodIdentityAgentProps = Omit<PodIdentityAgentAddOnProps, 'cluster' | 'kubernetesVersion'>;
+interface AwsForFluentBitProps extends Omit<AwsForFluentBitAddOnProps, 'cluster'> {
+  readonly iamPolicies?: any[];
+}
 
 interface EksProps {
   /**
@@ -40,7 +32,7 @@ interface EksProps {
    *
    * @default - Defaults Kubernetes version 1.30
    */
-  readonly kubernetesVersion?: 'V1_29' | 'V1_30';
+  readonly kubernetesVersion?: string;
   /**
    *  The Name of the created EKS Cluster.
    */
@@ -114,51 +106,43 @@ interface EksProps {
    * EKS add-ons
    */
   readonly addons?: {
-    readonly vpcCni?: VpcCniProps;
-    readonly coreDns?: CoreDnsProps;
-    readonly kubeProxy: KubeProxyProps;
-    readonly podIdentityAgent: PodIdentityAgentProps;
+    readonly vpcCni?: VpcCniAddOnProps;
+    readonly coreDns?: CoreDnsAddOnProps;
+    readonly kubeProxy?: KubeProxyAddOnProps;
+    readonly eksPodIdentityAgent?: EksPodIdentityAgentAddOnProps;
+    readonly awsForFluentBit?: AwsForFluentBitProps;
+    readonly ebsCni?: EbsCsiDriverAddOnProps;
+    readonly efsCni?: EfsCsiDriverProps;
   };
 }
 
-const kubernetesVersions: {[key: string]: KubernetesVersion} = {
-  V1_29: KubernetesVersion.V1_29,
-  V1_30: KubernetesVersion.V1_30,
-};
-
 const defaultProps = {
-  kubernetesVersion: KubernetesVersion.V1_30,
+  kubernetesVersion: '1.30',
   nodeGroupIamType: NodegroupAmiType.AL2_X86_64,
   capacityType: 'ON_DEMAND',
   instanceTypes: ['m5.xlarge'],
   desiredSize: 1,
 } as const;
 
-export function EKS({stack, props}: StackContext<EksProps>) {
+export async function EKS({stack, props}: StackContext<EksProps>) {
   const {vpc} = use(Vpc);
 
-  const version = props.kubernetesVersion
-    ? kubernetesVersions[props.kubernetesVersion]
-    : defaultProps.kubernetesVersion;
+  const kubernetesVersion = KubernetesVersion.of(
+    props.kubernetesVersion || defaultProps.kubernetesVersion
+  );
 
   const endpointAccess = props.allowedListIps
     ? EndpointAccess.PUBLIC_AND_PRIVATE.onlyFrom(...props.allowedListIps)
     : undefined;
 
-  const kubectlLayer =
-    version === KubernetesVersion.V1_29
-      ? new KubectlV29Layer(stack, 'kubectl')
-      : new KubectlV30Layer(stack, 'kubectl');
-
-  const cluster = new EKSCluster(stack, props.clusterName, {
+  const cluster = new EksCluster(stack, props.clusterName, {
     authenticationMode: AuthenticationMode.API_AND_CONFIG_MAP,
     clusterName: props.clusterName,
-    version,
-    kubectlLayer,
+    version: kubernetesVersion,
     vpc,
+    kubectlLayer: new KubectlV30Layer(stack, 'kubectl'),
     defaultCapacity: 0,
     endpointAccess,
-    vpcSubnets: [{subnetType: SubnetType.PRIVATE_WITH_EGRESS}],
   });
 
   if (props.nodeGroups) {
@@ -185,39 +169,31 @@ export function EKS({stack, props}: StackContext<EksProps>) {
     }
   }
 
-  // Install EKS addons.
-  addEKSAddons(stack, version, cluster, props);
+  const addons = props.addons;
+  if (addons?.vpcCni) {
+    await cluster.withVpcCni(addons.vpcCni);
+  }
+  if (addons?.coreDns) {
+    await cluster.withCoreDns(addons.coreDns);
+  }
+  if (addons?.kubeProxy) {
+    await cluster.withKubeProxy(addons.kubeProxy);
+  }
+  if (addons?.eksPodIdentityAgent) {
+    await cluster.withEksPodIdentityAgent(addons.eksPodIdentityAgent);
+  }
+  if (addons?.awsForFluentBit) {
+    await cluster.withAwsForFluentBit(addons.awsForFluentBit);
+  }
+  if (addons?.ebsCni) {
+    await cluster.withEbsCsi(addons.ebsCni);
+  }
+  if (addons?.efsCni) {
+    await cluster.withEfsCsi(addons.efsCni);
+  }
 
   return {
-    clusterName: cluster.clusterName,
-    openIdConnectProviderIssuer: cluster.openIdConnectProvider.openIdConnectProviderIssuer,
-  };
-}
-
-function addEKSAddons(
-  stack: Construct,
-  version: KubernetesVersion,
-  cluster: EKSCluster,
-  props: EksProps
-) {
-  const clusterInfo = {
     cluster,
-    kubernetesVersion: version,
+    clusterName: cluster.clusterName,
   };
-
-  if (props.addons?.vpcCni) {
-    new VpcCniAddOn(stack, 'VpcCniAddon', {...clusterInfo});
-  }
-
-  if (props.addons?.coreDns) {
-    new CoreDnsAddOn(stack, 'CoreDnsAddon', {...clusterInfo});
-  }
-
-  if (props.addons?.kubeProxy) {
-    new KubeProxyAddOn(stack, 'KubeProxyAddon', {...clusterInfo});
-  }
-
-  if (props.addons?.podIdentityAgent) {
-    new PodIdentityAgentAddOn(stack, 'PodIdentityAgentAddon', {...clusterInfo});
-  }
 }
