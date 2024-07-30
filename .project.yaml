@@ -1,5 +1,5 @@
 config:
-  region: ap-southeast-1
+  region: <%= env.CDK_AWS_REGION %>
   name: eks-playground
 
 stacks:
@@ -40,7 +40,7 @@ stacks:
                 Parser       json
                 Reserve_Data True
           cloudWatchLogs:
-            region: ap-southeast-1
+            region: <%= env.CDK_AWS_REGION %>
             logGroupName: fallback_group
             logStreamPrefix: fallback_stream
             autoCreateGroup: true
@@ -49,8 +49,29 @@ stacks:
               log_group_template  /aws/eks/eks-playground/namespaces/$kubernetes['namespace_name']
               log_stream_template $kubernetes['pod_name'].$kubernetes['container_name']
       prometheus:
-        awsManagedPrometheus:
-          writeUrl: <%= env.PROMETHEUS_REMOTE_WRITE_URL %>
+        values:
+          alertmanager:
+            enabled: false
+          prometheus-pushgateway:
+            enabled: false
+          server:
+            defaultFlagsOverride:
+              - --enable-feature=agent
+              - --storage.agent.retention.max-time=30m
+              - --config.file=/etc/config/prometheus.yml
+            extraFlags:
+              - web.enable-lifecycle
+            remoteWrite:
+              - url: <%= env.PROMETHEUS_REMOTE_WRITE_URL %>
+                sigv4:
+                  region: <%= env.CDK_AWS_REGION %>
+                queue_config:
+                  max_samples_per_send: 1000
+                  max_shards: 200
+                  capacity: 2500
+          serverFiles:
+            prometheus.yml:
+              rule_files: []
       grafana:
         values:
           ingress:
