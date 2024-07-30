@@ -29,6 +29,7 @@ stacks:
       eksPodIdentityAgent: {}
       ebsCni: {}
       efsCni: {}
+      awsLoadBalancerController: {}
       awsForFluentBit:
         values:
           additionalFilters: |

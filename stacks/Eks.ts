@@ -20,6 +20,7 @@ import {
   EbsCsiDriverAddOnProps,
   EfsCsiDriverProps,
   PrometheusAddOnProps,
+  AwsLoadBalancerControllerProps,
 } from '../lib/constructs/Eks';
 import {Vpc} from './Vpc';
 
@@ -115,6 +116,7 @@ interface EksProps {
     readonly ebsCni?: EbsCsiDriverAddOnProps;
     readonly efsCni?: EfsCsiDriverProps;
     readonly prometheus?: PrometheusAddOnProps;
+    readonly awsLoadBalancerController?: AwsLoadBalancerControllerProps;
   };
 }
 
@@ -195,6 +197,9 @@ export async function EKS({stack, props}: StackContext<EksProps>) {
   }
   if (addons?.prometheus) {
     await cluster.withPrometheus(addons.prometheus);
+  }
+  if (addons?.awsLoadBalancerController) {
+    await cluster.withAwsLoadBalancerController(addons.awsLoadBalancerController);
   }
 
   return {
