@@ -19,6 +19,7 @@ import {
   AwsForFluentBitAddOnProps,
   EbsCsiDriverAddOnProps,
   EfsCsiDriverProps,
+  PrometheusAddOnProps,
 } from '../lib/constructs/Eks';
 import {Vpc} from './Vpc';
 
@@ -113,6 +114,7 @@ interface EksProps {
     readonly awsForFluentBit?: AwsForFluentBitProps;
     readonly ebsCni?: EbsCsiDriverAddOnProps;
     readonly efsCni?: EfsCsiDriverProps;
+    readonly prometheus?: PrometheusAddOnProps;
   };
 }
 
@@ -190,6 +192,9 @@ export async function EKS({stack, props}: StackContext<EksProps>) {
   }
   if (addons?.efsCni) {
     await cluster.withEfsCsi(addons.efsCni);
+  }
+  if (addons?.prometheus) {
+    await cluster.withPrometheus(addons.prometheus);
   }
 
   return {

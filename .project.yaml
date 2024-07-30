@@ -47,3 +47,6 @@ stacks:
             extraOutputs: |
               log_group_template  /aws/eks/eks-playground/namespaces/$kubernetes['namespace_name']
               log_stream_template $kubernetes['pod_name'].$kubernetes['container_name']
+      prometheus:
+        awsManagedPrometheus:
+          writeUrl: https://aps-workspaces.ap-southeast-1.amazonaws.com/workspaces/ws-a68ec08a-6f2a-4e9b-9eab-2d7d84171685/api/v1/remote_write

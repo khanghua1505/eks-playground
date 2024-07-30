@@ -12,10 +12,11 @@ import {Role, ManagedPolicy, PolicyStatement, OpenIdConnectPrincipal} from 'aws-
 import * as kms from 'aws-cdk-lib/aws-kms';
 import {EKSClient, DescribeAddonVersionsCommand} from '@aws-sdk/client-eks';
 import {Construct} from 'constructs';
+import {CfnJson, Duration, Stack} from 'aws-cdk-lib';
+import {merge} from 'lodash';
 
 import {Logger} from '../logger';
 import {useAWSClient} from '../credentials';
-import {CfnJson, Duration} from 'aws-cdk-lib';
 
 type ClusterProps = CDKClusterProps;
 
@@ -190,7 +191,13 @@ export type EfsCsiDriverProps = Omit<
   kmsKeys?: kms.Key[];
 };
 
-export type AwsForFluentBitAddOnProps = HelmChartProps;
+export type AwsForFluentBitAddOnProps = Omit<HelmChartProps, 'policyStatements' | 'managedPolices'>;
+
+export type PrometheusAddOnProps = Omit<HelmChartProps, 'policyStatements' | 'managedPolices'> & {
+  readonly awsManagedPrometheus?: {
+    readonly writeUrl: string;
+  };
+};
 
 /**
  * The EksCluster construct extends eks.Cluster.
@@ -212,6 +219,7 @@ export class EksCluster extends Cluster {
 
   private charts: {
     awsForFluentBit?: HelmChart;
+    prometheus?: HelmChart;
   };
 
   constructor(scope: Construct, id: string, props: ClusterProps) {
@@ -451,34 +459,17 @@ export class EksCluster extends Cluster {
       namespace: 'amazon-cloudwatch',
       createNamespace: true,
       values: {},
-      policyStatements: [],
-      managedPolicies: ['CloudWatchAgentServerPolicy'],
     } as const;
     if (!this.charts.awsForFluentBit) {
       const namespace = props.namespace || defaultProps.namespace;
       const serviceAccountName = 'aws-for-fluent-bit-sa';
-      const {openIdConnectProviderIssuer} = this.openIdConnectProvider;
-
-      const roleConditions = new CfnJson(this, 'AWSForFluentBitRoleConditions', {
-        value: {
-          [`${openIdConnectProviderIssuer}:aud`]: 'sts.amazonaws.com',
-          [`${openIdConnectProviderIssuer}:sub`]: `system:serviceaccount:${namespace}:${serviceAccountName}`,
-        },
+      const role = this.createRoleWithConditions({
+        roleName: 'AWSForFluentBitRole',
+        saName: serviceAccountName,
+        namespace,
+        policyStatements: [],
+        managedPolices: ['CloudWatchAgentServerPolicy'],
       });
-      const role = new Role(this, 'AWSForFluentBitRole', {
-        assumedBy: new OpenIdConnectPrincipal(this.openIdConnectProvider).withConditions({
-          StringEquals: roleConditions,
-        }),
-      });
-
-      const policyStatements = props.policyStatements || defaultProps.policyStatements;
-      policyStatements.map(statement => role.addToPrincipalPolicy(statement));
-
-      const managedPolices = props.managedPolices || defaultProps.managedPolicies;
-      managedPolices.map(name =>
-        role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName(name))
-      );
-
       // Install AWS for fluent bit helm chart.
       const chart = this.addHelmChart('aws-for-fluent-bit', {
         ...defaultProps,
@@ -499,6 +490,101 @@ export class EksCluster extends Cluster {
       this.charts.awsForFluentBit = chart;
     }
     return this.charts.awsForFluentBit;
+  }
+
+  public withPrometheus(props: PrometheusAddOnProps) {
+    const defaultProps = {
+      repository: 'https://prometheus-community.github.io/helm-charts',
+      chart: 'prometheus',
+      release: 'prometheus',
+      namespace: 'prometheus',
+      createNamespace: true,
+    } as const;
+    const region = Stack.of(this).region;
+    if (!this.charts.prometheus) {
+      const namespace = props.namespace || defaultProps.namespace;
+      const serviceAccountName = 'prometheus';
+      const role = this.createRoleWithConditions({
+        roleName: 'Grafana',
+        saName: serviceAccountName,
+        namespace,
+        managedPolices: [],
+        policyStatements: [
+          PolicyStatement.fromJson({
+            Effect: 'Allow',
+            Action: ['aps:RemoteWrite', 'aps:GetSeries', 'aps:GetLabels', 'aps:GetMetricMetadata'],
+            Resource: '*',
+          }),
+        ],
+      });
+      let values = {
+        serviceAccounts: {
+          server: {
+            create: true,
+            name: serviceAccountName,
+            annotations: {
+              'eks.amazonaws.com/role-arn': role.roleArn,
+            },
+          },
+        },
+        ...props.values,
+      };
+      if (props.awsManagedPrometheus) {
+        values = merge(values, {
+          server: {
+            remoteWrite: [
+              {
+                url: props.awsManagedPrometheus.writeUrl,
+                sigv4: {
+                  region,
+                },
+                queue_config: {
+                  max_samples_per_send: 1000,
+                  max_shards: 200,
+                  capacity: 2500,
+                },
+              },
+            ],
+          },
+        });
+      }
+      // Install AWS for fluent bit helm chart.
+      const chart = this.addHelmChart('prometheus', {
+        ...defaultProps,
+        ...props,
+        namespace,
+        values,
+      });
+      chart.node.addDependency(role);
+      this.charts.prometheus = chart;
+    }
+    return this.charts.prometheus;
+  }
+
+  private createRoleWithConditions(args: {
+    roleName: string;
+    saName: string;
+    namespace: string;
+    policyStatements: PolicyStatement[];
+    managedPolices: string[];
+  }) {
+    const {openIdConnectProviderIssuer} = this.openIdConnectProvider;
+    const stringEquals = new CfnJson(this, args.roleName + '-string-equals', {
+      value: {
+        [`${openIdConnectProviderIssuer}:aud`]: 'sts.amazonaws.com',
+        [`${openIdConnectProviderIssuer}:sub`]: `system:serviceaccount:${args.namespace}:${args.saName}`,
+      },
+    });
+    const role = new Role(this, args.roleName, {
+      assumedBy: new OpenIdConnectPrincipal(this.openIdConnectProvider).withConditions({
+        StringEquals: stringEquals,
+      }),
+    });
+    args.policyStatements?.map(statement => role.addToPrincipalPolicy(statement));
+    args.managedPolices?.map(name =>
+      role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName(name))
+    );
+    return role;
   }
 }
 
