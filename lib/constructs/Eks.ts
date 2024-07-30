@@ -8,7 +8,13 @@ import {
   KubernetesManifest,
   HelmChart,
 } from 'aws-cdk-lib/aws-eks';
-import {Role, ManagedPolicy, PolicyStatement, OpenIdConnectPrincipal} from 'aws-cdk-lib/aws-iam';
+import {
+  Role,
+  ManagedPolicy,
+  PolicyStatement,
+  OpenIdConnectPrincipal,
+  Effect,
+} from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import {EKSClient, DescribeAddonVersionsCommand} from '@aws-sdk/client-eks';
 import {Construct} from 'constructs';
@@ -204,6 +210,8 @@ export type AwsLoadBalancerControllerProps = Omit<
   'policyStatements' | 'managedPolices'
 >;
 
+export type GrafanaProps = Omit<HelmChartProps, 'policyStatements' | 'managedPolices'>;
+
 /**
  * The EksCluster construct extends eks.Cluster.
  */
@@ -226,6 +234,7 @@ export class EksCluster extends Cluster {
     awsForFluentBit?: HelmChart;
     prometheus?: HelmChart;
     awsLoadBalancerController?: HelmChart;
+    grafana?: HelmChart;
   };
 
   constructor(scope: Construct, id: string, props: ClusterProps) {
@@ -511,7 +520,7 @@ export class EksCluster extends Cluster {
       const namespace = props.namespace || defaultProps.namespace;
       const serviceAccountName = 'prometheus';
       const role = this.createRoleWithConditions({
-        roleName: 'Grafana',
+        roleName: 'Prometheus',
         saName: serviceAccountName,
         namespace,
         managedPolices: [],
@@ -567,7 +576,7 @@ export class EksCluster extends Cluster {
     return this.charts.prometheus;
   }
 
-  public async withAwsLoadBalancerController(props: AwsLoadBalancerControllerProps) {
+  public withAwsLoadBalancerController(props: AwsLoadBalancerControllerProps) {
     const defaultProps = {
       repository: 'https://aws.github.io/eks-charts',
       chart: 'aws-load-balancer-controller',
@@ -607,6 +616,63 @@ export class EksCluster extends Cluster {
       this.charts.awsLoadBalancerController = chart;
     }
     return this.charts.awsLoadBalancerController;
+  }
+
+  public withGrafana(props: GrafanaProps) {
+    const defaultProps = {
+      repository: 'https://grafana.github.io/helm-charts',
+      chart: 'grafana',
+      release: 'grafana',
+      namespace: 'monitoring',
+      createNamespace: true,
+    } as const;
+    if (!this.charts.grafana) {
+      const namespace = props.namespace || defaultProps.namespace;
+      const serviceAccountName = 'grafana';
+      const role = this.createRoleWithConditions({
+        roleName: 'Grafana',
+        saName: serviceAccountName,
+        namespace,
+        managedPolices: [],
+        policyStatements: [
+          new PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'aps:QueryMetrics',
+              'aps:GetMetricMetadata',
+              'aps:GetSeries',
+              'aps:GetLabels',
+            ],
+            resources: ['*'],
+          }),
+        ],
+      });
+      const values = {
+        serviceAccount: {
+          create: true,
+          name: serviceAccountName,
+          annotations: {
+            'eks.amazonaws.com/role-arn': role.roleArn,
+          },
+        },
+        'grafana.ini': {
+          auth: {
+            sigv4_auth_enabled: true,
+          },
+        },
+        ...props.values,
+      };
+      // Install Grafana server using Helm
+      const chart = this.addHelmChart('grafana', {
+        ...defaultProps,
+        ...props,
+        namespace,
+        values,
+      });
+      chart.node.addDependency(role);
+      this.charts.grafana = chart;
+    }
+    return this.charts.grafana;
   }
 
   private createRoleWithConditions(args: {
