@@ -4,10 +4,12 @@ import fs from 'fs/promises';
 import YAML from 'yaml';
 import dotenv from 'dotenv';
 import {merge} from 'lodash';
-import ejs from 'ejs';
 import {StackProps} from 'aws-cdk-lib';
+
 import {VisibleError} from './error';
 import {Logger} from './logger';
+import {Tokenize, tokenize} from './token';
+import {setContext} from './context';
 import {env} from './secrets';
 
 export interface ProjectConfig {
@@ -56,10 +58,8 @@ const DEFAULTS = {
 const CONFIG_FILES = ['.project', '.project.json', '.project.yaml', '.project.yml'];
 
 interface Project {
-  config: ConfigOptions &
-    Required<{
-      [key in keyof typeof DEFAULTS]: Exclude<ConfigOptions[key], undefined>;
-    }>;
+  config: ConfigOptions;
+  stacks: Tokenize<ProjectConfig['stacks']>;
   version: string;
   cdkVersion: string;
   constructsVersion: string;
@@ -67,7 +67,6 @@ interface Project {
     root: string;
     out: string;
   };
-  stacks: ProjectConfig['stacks'];
 }
 
 let project: Project | undefined;
@@ -84,22 +83,23 @@ export function useProject() {
 export async function initProject() {
   // Suppress warnings about deprecated CDK props.
   process.env.JSII_DEPRECATED = 'quiet';
+  setContext('env', env);
 
   Logger.debug('initing project');
   const root = await findRoot();
 
-  async function findConfigFile(files: string[], data: ejs.Data) {
+  async function findConfigFile(files: string[]) {
     for (const filename of files) {
       const file = path.join(root, filename);
       if (!fsSync.existsSync(file)) continue;
-      const project = await parseConfig(file, data);
+      const project = await parseConfig(file);
       return project as ProjectConfig;
     }
     return undefined;
   }
 
   let projectConfig = await (async function () {
-    const file = await findConfigFile(CONFIG_FILES, {env});
+    const file = await findConfigFile(CONFIG_FILES);
     if (file) return file;
 
     throw new VisibleError(
@@ -120,10 +120,9 @@ export async function initProject() {
     `.project.${stage}.yml`,
   ];
   const stageProjectConfig = await (async function () {
-    const file = await findConfigFile(stageConfigFiles, {env});
+    const file = await findConfigFile(stageConfigFiles);
     return file ? file : {};
   })();
-
   projectConfig = merge(projectConfig, stageProjectConfig);
 
   const region = config.region || process.env.AWS_REGION || process.env.REGION;
@@ -159,11 +158,11 @@ export async function initProject() {
       stackDir: config.stackDir || path.join(root, 'stacks'),
       cdk: config.cdk,
     },
+    stacks: tokenize(projectConfig.stacks || {}),
     paths: {
       root,
       out,
     },
-    stacks: projectConfig.stacks || {},
   };
 
   // Load .env files
@@ -174,12 +173,15 @@ export async function initProject() {
     path.join(project.paths.root, `.env.${project.config.stage}.local`),
   ].forEach(path => dotenv.config({path, override: true}));
 
+  // Set config context
+  setContext('config', project.config);
+
   Logger.debug('Config loaded', project);
   return project;
 }
 
-async function parseConfig(file: string, data?: ejs.Data) {
-  const content = await ejs.renderFile(file, data, {async: true});
+async function parseConfig(file: string) {
+  const content = await fs.readFile(file, {encoding: 'utf-8'});
   const projectConfig = YAML.parse(content) as ProjectConfig;
   const {config} = projectConfig ?? {};
   if (!config?.name) {

@@ -4,6 +4,7 @@ import {useSTSIdentity} from './credentials';
 import {initProject, useProject} from './project';
 import {App} from './constructs/App';
 import {AppContext, provideApp} from './context';
+import {resolve} from './token';
 import {
   StackContext as FunctionalStackContext,
   FunctionalStack,
@@ -53,12 +54,12 @@ export function stack(fn: FunctionalStack<any, any>, props?: StackProps) {
   if (!app) throw new Error('No app is set');
   const stackName = camelCase(fn.name);
   const stackOptions = useProject().stacks[stackName] || {};
-  const returns = app.stack(fn, {...props, ...stackOptions});
-  if (returns && 'then' in returns) {
-    worker.push(returns);
-  } else {
-    worker.push(Promise.resolve(returns));
-  }
+
+  const deploy = async () => {
+    const resolved = await resolve(stackOptions);
+    await app.stack(fn, {...props, ...resolved});
+  };
+  worker.push(deploy());
   return app;
 }
 

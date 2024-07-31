@@ -56,5 +56,9 @@ export function Vpc({stack, props}: StackContext<VpcProps>) {
 
   return {
     vpc,
+    vpcId: vpc.vpcId,
+    publicSubnets: vpc.publicSubnets.map(subnet => subnet.subnetId),
+    privateSubnets: vpc.privateSubnets.map(subnet => subnet.subnetId),
+    isolatedSubnets: vpc.isolatedSubnets.map(subnet => subnet.subnetId),
   };
 }

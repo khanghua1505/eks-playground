@@ -1,6 +1,7 @@
 import {camelCase} from 'change-case-all';
 import {App} from './App';
 import {Stack, StackProps} from './Stack';
+import {setContext} from '../context';
 
 export function stack(
   app: App,
@@ -30,9 +31,11 @@ export function stack(
   if (returns && 'then' in returns)
     return returns.then((data: any) => {
       getExports(app).set(fn, data);
+      setContext(id, data);
     });
 
   getExports(app).set(fn, returns);
+  setContext(id, returns);
   return app;
 }
 

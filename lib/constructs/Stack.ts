@@ -8,6 +8,7 @@ import {Construct} from 'constructs';
 
 import type {App} from './App';
 import {useProject} from '../project';
+import {resolve} from '../token';
 
 export type StackProps = CDKStackProps;
 
@@ -37,17 +38,18 @@ export class Stack extends CDKStack {
   }
 
   private static buildSynthesizer() {
-    const {config} = useProject();
+    const project = useProject();
+    const cdk = project.config.cdk;
     const props: DefaultStackSynthesizerProps = {
-      qualifier: config.cdk?.qualifier,
-      bootstrapStackVersionSsmParameter: config.cdk?.bootstrapStackVersionSsmParameter,
-      fileAssetsBucketName: config.cdk?.fileAssetsBucketName,
-      deployRoleArn: config.cdk?.deployRoleArn,
-      fileAssetPublishingRoleArn: config.cdk?.fileAssetPublishingRoleArn,
-      imageAssetPublishingRoleArn: config.cdk?.imageAssetPublishingRoleArn,
-      imageAssetsRepositoryName: config.cdk?.imageAssetsRepositoryName,
-      cloudFormationExecutionRole: config.cdk?.cloudFormationExecutionRole,
-      lookupRoleArn: config.cdk?.lookupRoleArn,
+      qualifier: cdk?.qualifier,
+      bootstrapStackVersionSsmParameter: cdk?.bootstrapStackVersionSsmParameter,
+      fileAssetsBucketName: cdk?.fileAssetsBucketName,
+      deployRoleArn: cdk?.deployRoleArn,
+      fileAssetPublishingRoleArn: cdk?.fileAssetPublishingRoleArn,
+      imageAssetPublishingRoleArn: cdk?.imageAssetPublishingRoleArn,
+      imageAssetsRepositoryName: cdk?.imageAssetsRepositoryName,
+      cloudFormationExecutionRole: cdk?.cloudFormationExecutionRole,
+      lookupRoleArn: cdk?.lookupRoleArn,
     };
 
     const isEmpty = Object.values(props).every(v => v === undefined);

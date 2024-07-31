@@ -1,5 +1,5 @@
 config:
-  region: <%= env.CDK_AWS_REGION %>
+  region: ap-southeast-1
   name: eks-playground
 
 stacks:
@@ -40,7 +40,7 @@ stacks:
                 Parser       json
                 Reserve_Data True
           cloudWatchLogs:
-            region: <%= env.CDK_AWS_REGION %>
+            region: <%= $.config.region %>
             logGroupName: fallback_group
             logStreamPrefix: fallback_stream
             autoCreateGroup: true
@@ -62,9 +62,9 @@ stacks:
             extraFlags:
               - web.enable-lifecycle
             remoteWrite:
-              - url: <%= env.PROMETHEUS_REMOTE_WRITE_URL %>
+              - url: <%= $.env.PROMETHEUS_REMOTE_WRITE_URL %>
                 sigv4:
-                  region: <%= env.CDK_AWS_REGION %>
+                  region: <%= $.config.region %>
                 queue_config:
                   max_samples_per_send: 1000
                   max_shards: 200
@@ -81,7 +81,7 @@ stacks:
               alb.ingress.kubernetes.io/target-type: ip
               alb.ingress.kubernetes.io/scheme: internet-facing
               alb.ingress.kubernetes.io/healthcheck-path: /api/health
-              alb.ingress.kubernetes.io/subnets: <%= env.VPC_PUBLIC_SUBNETS %>
-              alb.ingress.kubernetes.io/certificate-arn: <%= env.CERTIFICATE_ARN %>
+              alb.ingress.kubernetes.io/subnets: <%= $.vpc.publicSubnets.join(',') %>
+              alb.ingress.kubernetes.io/certificate-arn: <%= $.env.CERTIFICATE_ARN %>
             hosts: ["grafana.eks.mitom.dev"]
             ingressClassName: alb
