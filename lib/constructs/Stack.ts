@@ -8,7 +8,6 @@ import {Construct} from 'constructs';
 
 import type {App} from './App';
 import {useProject} from '../project';
-import {resolve} from '../token';
 
 export type StackProps = CDKStackProps;
 

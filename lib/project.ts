@@ -83,7 +83,6 @@ export function useProject() {
 export async function initProject() {
   // Suppress warnings about deprecated CDK props.
   process.env.JSII_DEPRECATED = 'quiet';
-  setContext('env', env);
 
   Logger.debug('initing project');
   const root = await findRoot();
@@ -174,6 +173,7 @@ export async function initProject() {
   ].forEach(path => dotenv.config({path, override: true}));
 
   // Set config context
+  setContext('env', env);
   setContext('config', project.config);
 
   Logger.debug('Config loaded', project);

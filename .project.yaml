@@ -9,7 +9,7 @@ stacks:
   eks:
     clusterName: eks-playground
     endpointAccess:
-      - 171.252.188.5/32
+      - <%= $.env.MY_IP %>
     nodeGroups:
       - name: General
         os: BOTTLEROCKET

@@ -41,7 +41,6 @@ export async function synth() {
   const stacksRelPath = path.relative(__dirname, project.config.stackDir!);
   await import(stacksRelPath);
   await Promise.all(worker);
-
   const assembly = app.synth();
   Logger.debug('Finish synth!');
   return assembly;
