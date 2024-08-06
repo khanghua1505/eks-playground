@@ -29,6 +29,12 @@ stacks:
       eksPodIdentityAgent: {}
       ebsCni: {}
       efsCni: {}
+      secretStore:
+        values:
+          syncSecret:
+            enabled: true
+        providers:
+          awsProvider: {}
       awsLoadBalancerController: {}
       awsForFluentBit:
         values:

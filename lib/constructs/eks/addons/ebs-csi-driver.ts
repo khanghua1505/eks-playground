@@ -10,11 +10,11 @@ export type EbsCsiDriverAddOnProps = Omit<
   /**
    * List of KMS keys to be used for encryption
    */
-  kmsKeys?: kms.Key[];
+  readonly kmsKeys?: kms.Key[];
   /**
    * StorageClass to be used for the addon
    */
-  storageClass?: string;
+  readonly storageClass?: string;
 };
 
 export async function addAwsEbsDriver(cluster: IEksCluster, props: EbsCsiDriverAddOnProps) {
