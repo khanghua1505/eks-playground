@@ -1,7 +1,7 @@
 import {
   Cluster,
   ICluster,
-  ClusterProps as CDKClusterProps,
+  ClusterProps,
   ServiceAccount,
   KubernetesVersion,
   CfnAddon,
@@ -22,8 +22,6 @@ import {Logger} from '../../logger';
 import {useAWSClient} from '../../credentials';
 import * as addons from './addons';
 
-type ClusterProps = CDKClusterProps;
-
 export type VpcCniAddOnProps = addons.VpcCniAddOnProps;
 export type CoreDnsAddOnProps = addons.CoreDnsAddOnProps;
 export type KubeProxyAddOnProps = addons.KubeProxyAddOnProps;
@@ -34,6 +32,7 @@ export type AwsForFluentBitAddOnProps = addons.AwsForFluentBitAddOnProps;
 export type PrometheusAddOnProps = addons.PrometheusAddOnProps;
 export type GrafanaProps = addons.GrafanaProps;
 export type AwsLoadBalancerControllerProps = addons.AwsLoadBalancerControllerProps;
+export type SecretStoreAddOnProps = addons.SecretStoreAddOnProps;
 
 export class AddOnProps {
   /**
@@ -185,6 +184,7 @@ export class EksCluster extends Cluster {
     prometheus?: HelmChart;
     awsLoadBalancerController?: HelmChart;
     grafana?: HelmChart;
+    secretStore?: HelmChart;
   };
 
   constructor(scope: Construct, id: string, props: ClusterProps) {
@@ -194,7 +194,7 @@ export class EksCluster extends Cluster {
     this.charts = {};
   }
 
-  public async addAddon(props: AddOnProps) {
+  async addAddon(props: AddOnProps) {
     let serviceAccount: ServiceAccount | undefined;
     let serviceAccountRoleArn: string | undefined;
     const namespace = props.namespace || 'kube-system';
@@ -267,7 +267,7 @@ export class EksCluster extends Cluster {
     return version;
   }
 
-  public createServiceAccountRole(args: {
+  createServiceAccountRole(args: {
     roleName: string;
     saName: string;
     namespace: string;
@@ -296,7 +296,7 @@ export class EksCluster extends Cluster {
   /**
    * Enable Amazon VPC CNI plugin for Kubernetes Amazon EKS add-on.
    */
-  public async withVpcCni(props: VpcCniAddOnProps) {
+  async withVpcCni(props: VpcCniAddOnProps) {
     if (!this.addons.vpcCni) {
       this.addons.vpcCni = await addons.addVpcCni(this, props);
     }
@@ -306,7 +306,7 @@ export class EksCluster extends Cluster {
   /**
    * Enable  CoreDNS Amazon EKS add-on
    */
-  public async withCoreDns(props: CoreDnsAddOnProps) {
+  async withCoreDns(props: CoreDnsAddOnProps) {
     if (!this.addons.coreDns) {
       this.addons.coreDns = await addons.addCoredns(this, props);
     }
@@ -316,7 +316,7 @@ export class EksCluster extends Cluster {
   /**
    * Enable Kubernetes kube-proxy add-on
    */
-  public async withKubeProxy(props: KubeProxyAddOnProps) {
+  async withKubeProxy(props: KubeProxyAddOnProps) {
     if (!this.addons.kubeProxy) {
       this.addons.kubeProxy = await addons.addKubeProxy(this, props);
     }
@@ -326,7 +326,7 @@ export class EksCluster extends Cluster {
   /**
    * Enable Amazon EKS Pod Identity Agent
    */
-  public async withEksPodIdentityAgent(props: EksPodIdentityAgentAddOnProps) {
+  async withEksPodIdentityAgent(props: EksPodIdentityAgentAddOnProps) {
     if (!this.addons.eksPodIdentityAgent) {
       this.addons.eksPodIdentityAgent = await addons.addEksPodIdentityAgent(this, props);
     }
@@ -336,7 +336,7 @@ export class EksCluster extends Cluster {
   /**
    * Enable Amazon EBS CSI driver
    */
-  public async withEbsCsi(props: EbsCsiDriverAddOnProps) {
+  async withEbsCsi(props: EbsCsiDriverAddOnProps) {
     if (!this.addons.ebsCsi) {
       this.addons.ebsCsi = await addons.addAwsEbsDriver(this, props);
     }
@@ -346,28 +346,28 @@ export class EksCluster extends Cluster {
   /**
    * Enable Amazon EFS CSI driver
    */
-  public async withEfsCsi(props: EfsCsiDriverProps) {
+  async withEfsCsi(props: EfsCsiDriverProps) {
     if (!this.addons.efsCsi) {
       this.addons.efsCsi = await addons.addEfsCsiDriver(this, props);
     }
     return this.addons.efsCsi;
   }
 
-  public async withAwsForFluentBit(props: AwsForFluentBitAddOnProps) {
+  async withAwsForFluentBit(props: AwsForFluentBitAddOnProps) {
     if (!this.charts.awsForFluentBit) {
       this.charts.awsForFluentBit = await addons.addAwsForFluentBit(this, props);
     }
     return this.charts.awsForFluentBit;
   }
 
-  public async withPrometheus(props: PrometheusAddOnProps) {
+  async withPrometheus(props: PrometheusAddOnProps) {
     if (!this.charts.prometheus) {
       this.charts.prometheus = await addons.addPrometheus(this, props);
     }
     return this.charts.prometheus;
   }
 
-  public async withAwsLoadBalancerController(props: AwsLoadBalancerControllerProps) {
+  async withAwsLoadBalancerController(props: AwsLoadBalancerControllerProps) {
     if (!this.charts.awsLoadBalancerController) {
       this.charts.awsLoadBalancerController = await addons.addAwsLoadBalancerController(
         this,
@@ -377,10 +377,17 @@ export class EksCluster extends Cluster {
     return this.charts.awsLoadBalancerController;
   }
 
-  public async withGrafana(props: GrafanaProps) {
+  async withGrafana(props: GrafanaProps) {
     if (!this.charts.grafana) {
       this.charts.grafana = await addons.addGrafana(this, props);
     }
     return this.charts.grafana;
+  }
+
+  async withSecretStore(props: SecretStoreAddOnProps) {
+    if (!this.charts.secretStore) {
+      this.charts.secretStore = await addons.addSecretsStore(this, props);
+    }
+    return this.charts.secretStore;
   }
 }

@@ -22,12 +22,9 @@ import {
   PrometheusAddOnProps,
   AwsLoadBalancerControllerProps,
   GrafanaProps,
+  SecretStoreAddOnProps,
 } from '../lib/constructs';
 import {Vpc} from './Vpc';
-
-interface AwsForFluentBitProps extends Omit<AwsForFluentBitAddOnProps, 'cluster'> {
-  readonly iamPolicies?: any[];
-}
 
 interface EksProps {
   /**
@@ -113,12 +110,13 @@ interface EksProps {
     readonly coreDns?: CoreDnsAddOnProps;
     readonly kubeProxy?: KubeProxyAddOnProps;
     readonly eksPodIdentityAgent?: EksPodIdentityAgentAddOnProps;
-    readonly awsForFluentBit?: AwsForFluentBitProps;
+    readonly awsForFluentBit?: AwsForFluentBitAddOnProps;
     readonly ebsCni?: EbsCsiDriverAddOnProps;
     readonly efsCni?: EfsCsiDriverProps;
     readonly prometheus?: PrometheusAddOnProps;
     readonly awsLoadBalancerController?: AwsLoadBalancerControllerProps;
     readonly grafana?: GrafanaProps;
+    readonly secretStore?: SecretStoreAddOnProps;
   };
 }
 
@@ -205,6 +203,9 @@ export async function EKS({stack, props}: StackContext<EksProps>) {
   }
   if (addons?.grafana) {
     await cluster.withGrafana(addons.grafana);
+  }
+  if (addons?.secretStore) {
+    await cluster.withSecretStore(addons.secretStore);
   }
 
   return {

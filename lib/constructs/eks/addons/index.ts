@@ -8,3 +8,4 @@ export * from './aws-for-fluent-bit';
 export * from './prometheus';
 export * from './grafana';
 export * from './aws-load-balancer-controller';
+export * from './secrets-store';
