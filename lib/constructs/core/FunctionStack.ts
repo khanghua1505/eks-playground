@@ -1,7 +1,7 @@
 import {camelCase} from 'change-case-all';
 import {App} from './App';
 import {Stack, StackProps} from './Stack';
-import {setContext} from '../context';
+import {setContext} from '../../context';
 
 export function stack(
   app: App,

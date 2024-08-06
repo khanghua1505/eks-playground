@@ -7,7 +7,7 @@ import {
 import {Construct} from 'constructs';
 
 import type {App} from './App';
-import {useProject} from '../project';
+import {useProject} from '../../project';
 
 export type StackProps = CDKStackProps;
 

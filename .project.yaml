@@ -83,5 +83,6 @@ stacks:
               alb.ingress.kubernetes.io/healthcheck-path: /api/health
               alb.ingress.kubernetes.io/subnets: <%= $.vpc.publicSubnets.join(',') %>
               alb.ingress.kubernetes.io/certificate-arn: <%= $.env.CERTIFICATE_ARN %>
-            hosts: ["grafana.eks.mitom.dev"]
+            hosts:
+              - <%= $.env.GRAFANA_HOST %>
             ingressClassName: alb

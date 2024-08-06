@@ -2,7 +2,7 @@ import path from 'path';
 import {camelCase} from 'change-case-all';
 import {useSTSIdentity} from './credentials';
 import {initProject, useProject} from './project';
-import {App} from './constructs/App';
+import {App} from './constructs';
 import {AppContext, provideApp} from './context';
 import {resolve} from './token';
 import {
@@ -10,8 +10,8 @@ import {
   FunctionalStack,
   use as useStack,
   dependsOn as dependsOnStack,
-} from './constructs/FunctionStack';
-import {StackProps} from './constructs/Stack';
+} from './constructs/core/FunctionStack';
+import {StackProps} from './constructs/core/Stack';
 import {Logger} from './logger';
 
 export type StackContext<T> = FunctionalStackContext<T>;

@@ -22,7 +22,7 @@ import {
   PrometheusAddOnProps,
   AwsLoadBalancerControllerProps,
   GrafanaProps,
-} from '../lib/constructs/Eks';
+} from '../lib/constructs';
 import {Vpc} from './Vpc';
 
 interface AwsForFluentBitProps extends Omit<AwsForFluentBitAddOnProps, 'cluster'> {
